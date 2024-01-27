@@ -1,0 +1,50 @@
+//@version=4
+strategy("EMA cross And RSI", overlay=true, initial_capital=2500)
+
+// กำหนดขนาดคำสั่ง
+tradeSize = input(100, title="Trade Size", minval=1)
+
+var float stopLoss   = na
+
+// Input parameters
+shortEMA = input(7, title="Short EMA Period")
+longEMA = input(14, title="Long EMA Period")
+ema100 = input(100, title="EMA 100 Period") // Adding input for EMA 100
+
+// RSI
+rsiLength = input(14, title="RSI Length")
+rsiValue = rsi(close, rsiLength)
+
+// Calculate EMAs
+emaShort = ema(close, shortEMA)
+emaLong = ema(close, longEMA)
+ema100Value = ema(close, ema100) // Calculate EMA 100
+
+// Plot EMAs on the chart
+plot(emaShort, color=color.rgb(253, 156, 156), title="Short EMA")
+plot(emaLong, color=color.rgb(37, 204, 22), title="Long EMA")
+
+// // Plot EMA 100 on the chart
+plot(ema100Value, color=color.rgb(90, 23, 134), title="EMA 100")
+
+// Strategy logic 
+buyCondition = crossover(emaShort, emaLong)  and emaLong < ema100Value and rsiValue > 55 // เพิ่มเงื่อนไขในการตรวจสอบ emaShort ตัดกับ emaLong และ emaLong อยู่ใต้ ema100Value
+sellCondition = crossunder(emaShort, emaLong) and emaLong > ema100Value and (rsiValue < 35 or rsiValue > 65)
+
+
+// กำหนดการเข้า-ออกตลาด
+if (buyCondition)
+    if strategy.position_size == 0.0
+        stopLoss   := close * 0.1
+    strategy.entry("Buy", strategy.long, qty=tradeSize)
+    // strategy.exit("exit1", "Buy", stop = stopLoss, qty=tradeSize)
+    
+if (sellCondition)
+    strategy.close("Buy")
+
+// Plot buy and sell signals on the chart
+plotshape(series=buyCondition, title="Buy Signal", color=color.rgb(137, 197, 122, 12), style=shape.labelup, location=location.belowbar, text="Buy")
+plotshape(series=sellCondition, title="Sell Signal", color=color.red, style=shape.labeldown, location=location.abovebar, text="Sell")
+
+
+
